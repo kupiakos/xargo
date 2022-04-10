@@ -12,6 +12,7 @@ use util;
 use sysroot::XargoMode;
 use xargo::Home;
 
+#[derive(Clone)]
 pub struct Rustflags {
     flags: Vec<String>,
 }
@@ -41,18 +42,29 @@ impl Rustflags {
         }
     }
 
+    pub fn push(&mut self, flag: impl Into<String>) {
+        self.flags.push(flag.into())
+    }
+
     /// Stringifies these flags for Xargo consumption
-    pub fn for_xargo(&self, home: &Home) -> String {
+    pub fn build_for_xargo(&self, home: &Home) -> String {
         let mut flags = self.flags.clone();
         flags.push("--sysroot".to_owned());
         flags.push(home.display().to_string());
-        flags.join(" ")
+        flags.join("\x1f")
     }
 }
 
 impl fmt::Display for Rustflags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt(&self.flags.join(" "), f)
+        let len = self.flags.len();
+        for (i, flag) in self.flags.iter().enumerate() {
+            write!(f, "'{flag}'")?;
+            if i < len - 1 {
+                f.write_str(" ")?;
+            }
+        }
+        Ok(())
     }
 }
 
